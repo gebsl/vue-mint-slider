@@ -1,11 +1,14 @@
 <template>
 <div class="mint-slider" ref="wrap">
+  <!-- click and contextmenu events must be captured -> animation has to be ended, because it is started with touchstart -->
   <div class="mint-slider-items-wrap" ref="sliders"
     @touchstart="touchStartHandle"
     @touchmove="touchMoveHandle"
     @touchend="touchEndHandle"
     @webkit-transition-end="onTransitionEnd()"
     @transitionend="onTransitionEnd()"
+    @click="endAnimation"
+    @contextmenu="endAnimation"
   >
     <slot></slot>
   </div>
@@ -37,6 +40,14 @@ export default {
     showIndicators: {
       type: Boolean,
       default: true
+    },
+    duration: {
+      type: Number,
+      default: 0.25
+    },
+    easing: {
+      type: String,
+      default: 'cubic-bezier(0.4, 0, 0.2, 1)'
     }
   },
   data () {
@@ -127,18 +138,17 @@ export default {
     setSlidersStyle () {
       let pageLength = this.slidesGroupFull ? this.pageCount * this.slidesPerGroup : this.itemLength;
       this.slidersWidth = Math.ceil(pageLength * this.sliderWidth);
-      this.sliders.style['transform'] = 'translateX(0)';
-      this.sliders.style['transition'] = 'none';
+      this.setTranslate(0);
       this.sliders.style['width'] = `${this.slidersWidth}px`;
     },
     /**
      * touchstart handle
      */
     touchStartHandle (event) {
-      event.preventDefault();
       let touch = event.touches[0];
       this.start.x = touch.pageX;
       this.start.y = touch.pageY;
+      this.sliders.style['will-change'] = 'transform';
     },
     /**
      * touchmove handle
@@ -159,8 +169,8 @@ export default {
           this.wrapWidth - this.slidersWidth + 
           ((this.maxMoveIndex - this.activeIndex) * this.sliderWidth + this.distan.x) * 0.3;
       }
-      this.sliders.style['transform'] = 'translateX(' + _sliderWidth + 'px)';
-      this.sliders.style['transition'] = 'none';
+
+      this.setTranslate(_sliderWidth)
     },
     /**
      * touchend handle
@@ -176,29 +186,27 @@ export default {
       this.getTouchDirection(this.distan.x, this.distan.y);
       const _moveLength = Math.ceil(Math.abs(this.distan.x / this.sliderWidth));
       const _slidesPerGroup = Math.max(this.slidesPerGroup, _moveLength);
+      let index;
+
       if (this.direction === 'left') {
-        this.activeIndex = this.activeIndex + _slidesPerGroup;
+        index = this.activeIndex + _slidesPerGroup;
       } else if (this.direction === 'right') {
-        this.activeIndex = this.activeIndex - _slidesPerGroup;
+        index = this.activeIndex - _slidesPerGroup;
       }
-      if (this.activeIndex < 0) {
-        this.activeIndex = 0;
-      }
-      if (this.activeIndex > this.maxMoveIndex) {
-        this.activeIndex = this.maxMoveIndex;
-      }
-      this.sliders.style['transform'] = `translateX(${-this.activeIndex * this.sliderWidth}px)`;
-      this.sliders.style['transition'] = 'transform .5s ease';
-      this.distan.x = 0;
-      this.distan.y = 0;
-      this.direction = null;
+
+      // is undefined if user only clicks on slide
+      if (index !== undefined)
+        this.goto(index);
     },
     onTransitionEnd () {
-      this.isAnimation = false;
       this.$emit('change', this.activeIndex);
+      this.endAnimation();
+    },
+    endAnimation () {
+      this.isAnimation = false;
       this.$nextTick(() => {
-        this.sliders.style['transition'] = 'none';
-        this.sliders.style['transform'] = `translateX(${-this.activeIndex * this.sliderWidth}px)`;
+        this.setTranslate(-this.activeIndex * this.sliderWidth);
+        this.sliders.style['will-change'] = '';
       });
     },
     /**
@@ -220,6 +228,26 @@ export default {
         }
       }
     },
+    startAnimation () {
+      this.setTranslate(-this.activeIndex * this.sliderWidth, true);
+      this.distan.x = 0;
+      this.distan.y = 0;
+      this.direction = null;
+    },
+    setTranslate (x, withTransition = false) {
+      this.sliders.style.transform = `translate3d(${x}px, 0, 0)`;
+      this.sliders.style.transition = withTransition ? `transform ${this.duration}s ${this.easing}` : 'none';
+    },
+    goto (index) {
+      if (index < 0 || !index)
+        index = 0;
+      
+      if (index > this.maxMoveIndex)
+        index = this.maxMoveIndex;
+
+      this.activeIndex = index;
+      this.startAnimation();
+    }
   }
 };
 </script>
