@@ -97,9 +97,10 @@ export default {
     this.wrap = this.$refs.wrap;
     this.sliders = this.$refs.sliders;
     this.ready = true;
-    this.wrapWidth = this.$refs.wrap.offsetWidth;
-    this.sliderWidth = Math.ceil(this.wrapWidth / this.slidesPerView);
-    this.reInitPages();
+
+    window.addEventListener('resize', () => this.onResize());
+
+    this.onResize();
   },
   methods: {
     sliderItemCreated() {
@@ -138,7 +139,7 @@ export default {
     setSlidersStyle () {
       let pageLength = this.slidesGroupFull ? this.pageCount * this.slidesPerGroup : this.itemLength;
       this.slidersWidth = Math.ceil(pageLength * this.sliderWidth);
-      this.setTranslate(0);
+      this.setCurrentTranslate();
       this.sliders.style['width'] = `${this.slidersWidth}px`;
     },
     /**
@@ -205,7 +206,7 @@ export default {
     endAnimation () {
       this.isAnimation = false;
       this.$nextTick(() => {
-        this.setTranslate(-this.activeIndex * this.sliderWidth);
+        this.setCurrentTranslate();
         this.sliders.style['will-change'] = '';
       });
     },
@@ -229,10 +230,13 @@ export default {
       }
     },
     startAnimation () {
-      this.setTranslate(-this.activeIndex * this.sliderWidth, true);
+      this.setCurrentTranslate(true);
       this.distan.x = 0;
       this.distan.y = 0;
       this.direction = null;
+    },
+    setCurrentTranslate (withTransition = false) {
+      this.setTranslate(-this.activeIndex * this.sliderWidth, withTransition);
     },
     setTranslate (x, withTransition = false) {
       this.sliders.style.transform = `translate3d(${x}px, 0, 0)`;
@@ -247,7 +251,12 @@ export default {
 
       this.activeIndex = index;
       this.startAnimation();
-    }
+    },
+    onResize () {
+      this.wrapWidth = this.$refs.wrap.offsetWidth;
+      this.sliderWidth = Math.ceil(this.wrapWidth / this.slidesPerView);
+      this.reInitPages();
+    },
   }
 };
 </script>
