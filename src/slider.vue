@@ -98,9 +98,12 @@ export default {
     this.sliders = this.$refs.sliders;
     this.ready = true;
 
-    window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('resize', this.onResize);
 
-    this.onResize();
+    this.resizeSliders();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onResize);
   },
   methods: {
     sliderItemCreated() {
@@ -252,10 +255,14 @@ export default {
       this.activeIndex = index;
       this.startAnimation();
     },
-    onResize () {
+    resizeSliders () {
       this.wrapWidth = this.$refs.wrap.offsetWidth;
       this.sliderWidth = Math.ceil(this.wrapWidth / this.slidesPerView);
       this.reInitPages();
+    },
+    onResize () {
+      // prevents weird chrome behaviour
+      setTimeout(() => this.resizeSliders(), 0);
     },
   }
 };
