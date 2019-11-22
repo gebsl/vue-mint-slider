@@ -196,11 +196,12 @@ export default {
         index = this.activeIndex + _slidesPerGroup;
       } else if (this.direction === 'right') {
         index = this.activeIndex - _slidesPerGroup;
+      } else {
+        // if touch direction is ambigously, go back to current slide
+        index = this.activeIndex;
       }
 
-      // is undefined if user only clicks on slide
-      if (index !== undefined)
-        this.goto(index);
+      this.goto(index);
     },
     onTransitionEnd () {
       this.$emit('change', this.activeIndex);
