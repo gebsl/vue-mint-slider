@@ -174,16 +174,21 @@ export default {
           ((this.maxMoveIndex - this.activeIndex) * this.sliderWidth + this.distan.x) * 0.3;
       }
 
-      this.setTranslate(_sliderWidth)
+      this.setTranslate(_sliderWidth);
     },
     /**
      * touchend handle
      */
     touchEndHandle (event) {
       let touch = event.changedTouches[0];
+
+      // firefox seems to be buggy and does not give us changedTouches...strange
+      if (touch) {
+        this.end.x = touch.pageX;
+        this.end.y = touch.pageY;
+      }
+
       this.isAnimation = true;
-      this.end.x = touch.pageX;
-      this.end.y = touch.pageY;
       this.distan.x = this.end.x - this.start.x;
       this.distan.y = this.end.y - this.start.y;
 
